@@ -16,5 +16,8 @@ FROM gcr.io/distroless/static-debian12 AS runner
 COPY --from=builder /app/gitsaver /app/gitsaver
 
 ENV DESTINATION_PATH /output
+ENV PORT 8080
+
+EXPOSE 8080
 
 CMD ["/app/gitsaver"]

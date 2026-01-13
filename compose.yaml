@@ -7,9 +7,13 @@ services:
     container_name: gitsaver
     restart: unless-stopped
     environment:
+      GITHUB_CRON: ${GITHUB_CRON}
       GITHUB_TOKEN: ${GITHUB_TOKEN}
       GITHUB_USERNAME: ${GITHUB_USERNAME}
       GITHUB_INCLUDE_OTHER_USERS_REPOS: ${GITHUB_INCLUDE_OTHER_USERS_REPOS}
       GITHUB_INCLUDE_FORKED_REPOS: ${GITHUB_INCLUDE_FORKED_REPOS}
+      GITHUB_EXTRACT_TARBALLS: ${GITHUB_EXTRACT_TARBALLS}
     volumes:
       - ${DESTINATION_PATH}:/output
+    ports:
+      - 8080:8080
