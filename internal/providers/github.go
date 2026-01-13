@@ -78,7 +78,6 @@ func BackupGithubRepositories(ctx context.Context, cfg *config.Config) error {
 		go func(repo *github.Repository) {
 			defer wg.Done()
 			if shouldSkipRepository(*repo, cfg.Github, gClient.username) {
-				log.Printf("Skipping forked repository %s/%s", *repo.Owner.Login, *repo.Name)
 				return
 			}
 
@@ -165,6 +164,8 @@ func shouldSkipRepository(repo github.Repository, cfg config.GithubProviderConfi
 }
 
 func downloadRepositoryTarball(client *GithubClient, repo github.Repository, path string, shouldExtractTarball bool) error {
+	log.Printf("Downloading tarball for repository %s/%s", *repo.Owner.Login, *repo.Name)
+
 	link, _, err := client.client.Repositories.GetArchiveLink(client.ctx, *repo.Owner.Login, *repo.Name, github.Tarball, nil, 1)
 	if err != nil {
 		return err
