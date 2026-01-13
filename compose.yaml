@@ -1,0 +1,15 @@
+services:
+  gitsaver:
+    image: gitsaver
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gitsaver
+    restart: unless-stopped
+    environment:
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+      GITHUB_USERNAME: ${GITHUB_USERNAME}
+      GITHUB_INCLUDE_OTHER_USERS_REPOS: ${GITHUB_INCLUDE_OTHER_USERS_REPOS}
+      GITHUB_INCLUDE_FORKED_REPOS: ${GITHUB_INCLUDE_FORKED_REPOS}
+    volumes:
+      - ${DESTINATION_PATH}:/output
