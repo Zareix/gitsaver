@@ -10,7 +10,7 @@ jobs:
     uses: zareix/gh-actions/.github/workflows/get-version.yml@main
     with:
       type: regex
-      file: main.go
+      file: cmd/gitsaver/main.go
       regex: 'const Version = "(\K[^"]+)'
 
   docker:
@@ -27,13 +27,19 @@ jobs:
       push-image: true
       platforms: linux/amd64,linux/arm64
 
+  build:
+    name: Build executable
+    uses: ./.github/workflows/build.yml
+
   release:
     name: Create release
     needs:
       - version
       - docker
+      - build
     permissions:
       contents: write
     uses: zareix/gh-actions/.github/workflows/release.yml@main
     with:
       tag: ${{ needs.version.outputs.version }}
+      assets: gitsaver_build

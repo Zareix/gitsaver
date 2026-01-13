@@ -1,7 +1,6 @@
 package config
 
 import (
-	"errors"
 	"log"
 	"os"
 	"strconv"
@@ -36,11 +35,8 @@ type Config struct {
 }
 
 func LoadConfig() *Config {
-	if _, err := os.Stat(".env"); !errors.Is(err, os.ErrNotExist) {
-		err := godotenv.Load()
-		if err != nil {
-			log.Println("Error loading .env file")
-		}
+	if err := godotenv.Load(); err != nil {
+		log.Println("Could not load .env file, proceeding with environment variables")
 	}
 
 	destinationPath, destinationPathExists := os.LookupEnv("DESTINATION_PATH")

@@ -1,4 +1,4 @@
-package gitsaver
+package main
 
 import (
 	"context"
@@ -12,7 +12,9 @@ import (
 	"github.com/go-co-op/gocron/v2"
 )
 
-func Run() {
+const Version = "1.1.0"
+
+func main() {
 	ctx := context.Background()
 	cfg := config.LoadConfig()
 
