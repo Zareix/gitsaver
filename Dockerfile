@@ -8,15 +8,15 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o /app/gitsaver
+RUN go build -o /app/gitsaver ./cmd/gitsaver
 
 
 FROM gcr.io/distroless/static-debian12 AS runner
 
 COPY --from=builder /app/gitsaver /app/gitsaver
 
-ENV DESTINATION_PATH /output
-ENV PORT 8080
+ENV DESTINATION_PATH=/output
+ENV PORT=8080
 
 EXPOSE 8080
 
