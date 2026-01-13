@@ -2,11 +2,13 @@ package providers
 
 import (
 	"context"
+	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
-	"io"
-	"net/http"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/google/go-github/v81/github"
 )
@@ -85,7 +87,7 @@ func BackupGithubRepositories(ctx context.Context) {
 	// }
 	//
 	for _, repo := range repos {
-		err := downloadRepository(*repo, destinationPath)
+		err := getContents(ctx, gClient.client, *repo.Owner.Login, *repo.Name, "", filepath.Join(destinationPath, *repo.Name))
 		if err != nil {
 			println(fmt.Errorf("error downloading repository %s: %w", *repo.Name, err).Error())
 		}
@@ -133,29 +135,93 @@ func getAuthenticatedRepositoriesList(ctx context.Context, client *github.Client
 	return repos, nil
 }
 
-func downloadRepository(repo github.Repository, path string) error {
-	resp, err := http.Get(*repo.ArchiveURL)
+func getContents(ctx context.Context, client *github.Client, owner, repo, path, basePath string) {
+	fmt.Println("\n\n")
+
+	fileContent, directoryContent, resp, err := client.Repositories.GetContents(ctx, owner, repo, path, nil)
 	if err != nil {
-		return err
+		fmt.Println(err)
+		return
 	}
-	defer resp.Body.Close()
+	fmt.Printf("%#v\n", fileContent)
+	fmt.Printf("%#v\n", directoryContent)
+	fmt.Printf("%#v\n", resp)
 
-	if err := os.MkdirAll(filepath.Join(path, *repo.Owner.Login), 0755); err != nil {
-		return err
+	for _, c := range directoryContent {
+		fmt.Println(*c.Type, *c.Path, *c.Size, *c.SHA)
+
+		local := filepath.Join(basePath, *c.Path)
+		fmt.Println("local:", local)
+
+		switch *c.Type {
+		case "file":
+			_, err := os.Stat(local)
+			if err == nil {
+				b, err1 := os.ReadFile(local)
+				if err1 == nil {
+					sha := calculateGitSHA1(b)
+					if *c.SHA == hex.EncodeToString(sha) {
+						fmt.Println("no need to update this file, the SHA is the same")
+						continue
+					}
+				}
+			}
+			downloadContents(ctx, client, c, owner, repo, local)
+		case "dir":
+			getContents(ctx, client, owner, repo, filepath.Join(path, *c.Path), basePath)
+		}
+	}
+}
+
+func downloadContents(ctx context.Context, client *github.Client, content *github.RepositoryContent, owner, repo, localPath string) {
+	if content.Content != nil {
+		fmt.Println("content:", *content.Content)
 	}
 
-	out, err := os.Create(filepath.Join(path, *repo.Owner.Login, *repo.Name+".tar.gz"))
+	rc, _, err := client.Repositories.DownloadContents(ctx, owner, repo, *content.Path, nil)
 	if err != nil {
-		return err
+		fmt.Println(err)
+		return
 	}
-	defer out.Close()
+	defer rc.Close()
 
-	_, err = io.Copy(out, resp.Body)
+	b, err := ioutil.ReadAll(rc)
 	if err != nil {
-		return err
+		fmt.Println(err)
+		return
 	}
 
-	println("Successfully downloaded", *repo.Owner.Login+"/"+*repo.Name, "to", path)
+	err = os.MkdirAll(filepath.Dir(localPath), 0666)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
-	return nil
+	fmt.Println("Writing the file:", localPath)
+	f, err := os.Create(localPath)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer f.Close()
+	n, err := f.Write(b)
+	if err != nil {
+		fmt.Println(err)
+	}
+	if n != *content.Size {
+		fmt.Printf("number of bytes differ, %d vs %d\n", n, *content.Size)
+	}
+}
+
+// calculateGitSHA1 computes the github sha1 from a slice of bytes.
+// The bytes are prepended with: "blob " + filesize + "\0" before runing through sha1.
+func calculateGitSHA1(contents []byte) []byte {
+	contentLen := len(contents)
+	blobSlice := []byte("blob " + strconv.Itoa(contentLen))
+	blobSlice = append(blobSlice, '\x00')
+	blobSlice = append(blobSlice, contents...)
+	h := sha1.New()
+	h.Write(blobSlice)
+	bs := h.Sum(nil)
+	return bs
 }
