@@ -13,10 +13,14 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/go-git/go-git/v6"
+	gitConfig "github.com/go-git/go-git/v6/config"
+	httpTransport "github.com/go-git/go-git/v6/plumbing/transport/http"
 	"github.com/google/go-github/v81/github"
 )
 
 type GithubClient struct {
+	ctx             context.Context
 	isAuthenticated bool
 	client          *github.Client
 	username        string
@@ -27,6 +31,7 @@ func getClient(ctx context.Context, cfg *config.Config) (*GithubClient, error) {
 
 	if cfg.Github.Token == "" {
 		return &GithubClient{
+			ctx:             ctx,
 			isAuthenticated: false,
 			client:          client,
 			username:        cfg.Github.Username,
@@ -43,6 +48,7 @@ func getClient(ctx context.Context, cfg *config.Config) (*GithubClient, error) {
 	log.Println("Logged in as:", *user.Login)
 
 	return &GithubClient{
+		ctx:             ctx,
 		isAuthenticated: true,
 		client:          client,
 		username:        *user.Login,
@@ -50,6 +56,7 @@ func getClient(ctx context.Context, cfg *config.Config) (*GithubClient, error) {
 }
 
 func BackupGithubRepositories(ctx context.Context, cfg *config.Config) error {
+	log.Printf("Starting GitHub repositories backup with %s method...", cfg.Github.BackupMethod)
 	gClient, err := getClient(ctx, cfg)
 	if err != nil {
 		return err
@@ -57,56 +64,44 @@ func BackupGithubRepositories(ctx context.Context, cfg *config.Config) error {
 
 	repos := []*github.Repository{}
 	if gClient.isAuthenticated {
-		repos, err = getAuthenticatedRepositoriesList(ctx, gClient)
+		repos, err = getAuthenticatedRepositoriesList(gClient)
 	} else {
-		repos, err = getUnauthenticatedRepositoriesList(ctx, gClient)
+		repos, err = getUnauthenticatedRepositoriesList(gClient)
 	}
 	if err != nil {
 		return fmt.Errorf("Error fetching repositories list: %w", err)
 	}
 
 	var wg sync.WaitGroup
-	errChan := make(chan error, len(repos))
-
 	for _, repo := range repos {
 		wg.Add(1)
 		go func(repo *github.Repository) {
 			defer wg.Done()
-			if !cfg.Github.IncludeOtherUsersRepos && !strings.EqualFold(*repo.Owner.Login, gClient.username) {
-				log.Printf("Skipping repository %s/%s", *repo.Owner.Login, *repo.Name)
-				return
-			}
-
-			if !cfg.Github.IncludeForkedRepos && repo.GetFork() {
+			if shouldSkipRepository(*repo, cfg.Github, gClient.username) {
 				log.Printf("Skipping forked repository %s/%s", *repo.Owner.Login, *repo.Name)
 				return
 			}
 
-			fileName, err := downloadRepositoryTarball(ctx, gClient.client, *repo, cfg.DestinationPath)
-			if err != nil {
-				log.Println(fmt.Errorf("error downloading repository %s: %w", *repo.Name, err).Error())
-			}
-			if cfg.Github.ExtractTarballs {
-				err = tarball.ExtractTarGz(fileName, filepath.Join(cfg.DestinationPath, *repo.Owner.Login, *repo.Name))
+			switch cfg.Github.BackupMethod {
+			case config.Tarball:
+				err := downloadRepositoryTarball(gClient, *repo, cfg.DestinationPath, cfg.Github.ExtractTarballs)
+				if err != nil {
+					log.Println(fmt.Errorf("Error downloading repository %s: %w", *repo.Name, err).Error())
+				}
+			case config.Git:
+				err := cloneRepository(*cfg, *repo.CloneURL, filepath.Join(cfg.DestinationPath, *repo.Owner.Login, *repo.Name))
+				if err != nil {
+					log.Println(fmt.Errorf("Error cloning repository %s: %w", *repo.Name, err).Error())
+				}
 			}
 		}(repo)
 	}
-
-	go func() {
-		wg.Wait()
-		close(errChan)
-	}()
-
-	for err := range errChan {
-		if err != nil {
-			log.Println("Error:", err)
-		}
-	}
+	wg.Wait()
 
 	return nil
 }
 
-func getUnauthenticatedRepositoriesList(ctx context.Context, client *GithubClient) ([]*github.Repository, error) {
+func getUnauthenticatedRepositoriesList(client *GithubClient) ([]*github.Repository, error) {
 	if client.username == "" {
 		return nil, fmt.Errorf("GitHub username is required for unauthenticated requests")
 	}
@@ -117,7 +112,7 @@ func getUnauthenticatedRepositoriesList(ctx context.Context, client *GithubClien
 	}
 
 	for {
-		r, resp, err := client.client.Repositories.ListByUser(ctx, client.username, opt)
+		r, resp, err := client.client.Repositories.ListByUser(client.ctx, client.username, opt)
 		if err != nil {
 			return nil, err
 		}
@@ -130,14 +125,14 @@ func getUnauthenticatedRepositoriesList(ctx context.Context, client *GithubClien
 	return repos, nil
 }
 
-func getAuthenticatedRepositoriesList(ctx context.Context, client *GithubClient) ([]*github.Repository, error) {
+func getAuthenticatedRepositoriesList(client *GithubClient) ([]*github.Repository, error) {
 	repos := []*github.Repository{}
 	opt := &github.RepositoryListByAuthenticatedUserOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
 
 	for {
-		r, resp, err := client.client.Repositories.ListByAuthenticatedUser(ctx, opt)
+		r, resp, err := client.client.Repositories.ListByAuthenticatedUser(client.ctx, opt)
 		if err != nil {
 			return nil, err
 		}
@@ -150,35 +145,100 @@ func getAuthenticatedRepositoriesList(ctx context.Context, client *GithubClient)
 	return repos, nil
 }
 
-func downloadRepositoryTarball(ctx context.Context, client *github.Client, repo github.Repository, path string) (string, error) {
-	link, _, err := client.Repositories.GetArchiveLink(ctx, *repo.Owner.Login, *repo.Name, github.Tarball, nil, 1)
+func shouldSkipRepository(repo github.Repository, cfg config.GithubProviderConfig, currentUsername string) bool {
+	if !cfg.IncludeArchivedRepos && repo.GetArchived() {
+		log.Printf("Skipping archived repository %s/%s", *repo.Owner.Login, *repo.Name)
+		return true
+	}
+
+	if !cfg.IncludeForkedRepos && repo.GetFork() {
+		log.Printf("Skipping forked repository %s/%s", *repo.Owner.Login, *repo.Name)
+		return true
+	}
+
+	if !cfg.IncludeOtherUsersRepos && !strings.EqualFold(*repo.Owner.Login, currentUsername) {
+		log.Printf("Skipping repository %s/%s owned by another user", *repo.Owner.Login, *repo.Name)
+		return true
+	}
+
+	return false
+}
+
+func downloadRepositoryTarball(client *GithubClient, repo github.Repository, path string, shouldExtractTarball bool) error {
+	link, _, err := client.client.Repositories.GetArchiveLink(client.ctx, *repo.Owner.Login, *repo.Name, github.Tarball, nil, 1)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	resp, err := http.Get(link.String())
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer resp.Body.Close()
 
 	if err := os.MkdirAll(filepath.Join(path, *repo.Owner.Login), 0755); err != nil {
-		return "", err
+		return err
 	}
 
 	filePath := filepath.Join(path, *repo.Owner.Login, *repo.Name+".tar.gz")
 	out, err := os.Create(filePath)
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer out.Close()
 
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
-		return "", err
+		return err
+	}
+
+	if shouldExtractTarball {
+		err = tarball.ExtractTarGz(filePath, filepath.Join(path, *repo.Owner.Login, *repo.Name))
 	}
 
 	log.Println("Successfully downloaded", *repo.Owner.Login+"/"+*repo.Name, "to", filePath)
 
-	return filePath, nil
+	return nil
+}
+
+func cloneRepository(cfg config.Config, repoUrl, destPath string) error {
+	auth := &httpTransport.BasicAuth{
+		Username: "abc123",
+		Password: cfg.Github.Token,
+	}
+
+	if _, err := os.Stat(destPath); err == nil {
+		log.Printf("Repository %s already exists. Deleting it...", repoUrl)
+
+		err = os.RemoveAll(destPath)
+		if err != nil {
+			return fmt.Errorf("Failed to remove existing repository: %w", err)
+		}
+	}
+
+	log.Println("Cloning repository", repoUrl, "to", destPath)
+
+	repo, err := git.PlainClone(destPath, &git.CloneOptions{
+		URL:  repoUrl,
+		Auth: auth,
+	})
+	if err != nil {
+		return fmt.Errorf("Failed to clone repository: %w", err)
+	}
+
+	remote, err := repo.Remote("origin")
+	if err != nil {
+		return fmt.Errorf("Failed to get remote: %w", err)
+	}
+
+	if err := remote.Fetch(&git.FetchOptions{
+		RefSpecs: []gitConfig.RefSpec{"refs/*:refs/*"},
+		Auth:     auth,
+	}); err != nil {
+		if err != git.NoErrAlreadyUpToDate {
+			return fmt.Errorf("Failed to fetch updates: %w", err)
+		}
+	}
+
+	return err
 }

@@ -10,13 +10,22 @@ import (
 	"github.com/joho/godotenv"
 )
 
+type BackupMethod string
+
+const (
+	Git     BackupMethod = "git"
+	Tarball BackupMethod = "tarball"
+)
+
 type GithubProviderConfig struct {
+	BackupMethod           BackupMethod
 	RunOnStartup           bool
 	Cron                   string
 	Username               string
 	Token                  string
 	IncludeOtherUsersRepos bool
 	IncludeForkedRepos     bool
+	IncludeArchivedRepos   bool
 	ExtractTarballs        bool
 }
 
@@ -30,7 +39,7 @@ func LoadConfig() *Config {
 	if _, err := os.Stat(".env"); !errors.Is(err, os.ErrNotExist) {
 		err := godotenv.Load()
 		if err != nil {
-			log.Fatal("Error loading .env file")
+			log.Println("Error loading .env file")
 		}
 	}
 
@@ -56,13 +65,24 @@ func LoadConfig() *Config {
 }
 
 func loadGithubConfig() GithubProviderConfig {
+	backupMethodEnv := os.Getenv("GITHUB_BACKUP_METHOD")
+	var backupMethod BackupMethod
+	switch strings.ToLower(backupMethodEnv) {
+	case "git":
+		backupMethod = Git
+	default:
+		backupMethod = Tarball
+	}
+
 	return GithubProviderConfig{
+		BackupMethod:           backupMethod,
 		RunOnStartup:           isTrueEnvVar(os.Getenv("GITHUB_RUN_ON_STARTUP")),
 		Cron:                   os.Getenv("GITHUB_CRON"),
 		Token:                  os.Getenv("GITHUB_TOKEN"),
 		Username:               os.Getenv("GITHUB_USERNAME"),
 		IncludeOtherUsersRepos: isTrueEnvVar(os.Getenv("GITHUB_INCLUDE_OTHER_USERS_REPOS")),
 		IncludeForkedRepos:     isTrueEnvVar(os.Getenv("GITHUB_INCLUDE_FORKED_REPOS")),
+		IncludeArchivedRepos:   isTrueEnvVar(os.Getenv("GITHUB_INCLUDE_ARCHIVED_REPOS")),
 		ExtractTarballs:        isTrueEnvVar(os.Getenv("GITHUB_EXTRACT_TARBALLS")),
 	}
 }

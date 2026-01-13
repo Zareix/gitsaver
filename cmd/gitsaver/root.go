@@ -29,6 +29,7 @@ func Run() {
 				if err != nil {
 					log.Println("GitHub backup job failed:", err)
 				}
+				log.Println("GitHub backup job completed")
 			}),
 			gocron.WithName("GitHub Backup Job"),
 		)
