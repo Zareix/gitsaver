@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gitsaver/internal/config"
 	"gitsaver/internal/providers"
+	"gitsaver/internal/webhook"
 	"log"
 	"net/http"
 
@@ -12,7 +13,7 @@ import (
 	"github.com/go-co-op/gocron/v2"
 )
 
-const Version = "1.1.1"
+const Version = "1.2.0"
 
 func main() {
 	ctx := context.Background()
@@ -57,7 +58,14 @@ func main() {
 func runGithubBackup(ctx context.Context, cfg *config.Config) {
 	err := providers.BackupGithubRepositories(ctx, cfg)
 	if err != nil {
+		if webhookErr := webhook.TriggerWebhook(cfg.FailureWebhookURL, "failure", fmt.Sprintf("GitHub backup failed: %v", err), cfg.WebhookHeaders); webhookErr != nil {
+			log.Printf("Warning: Failed to trigger failure webhook: %v", webhookErr)
+		}
 		log.Fatal("GitHub backup job failed:", err)
+	}
+
+	if err := webhook.TriggerWebhook(cfg.SuccessWebhookURL, "success", "GitHub backup completed successfully", cfg.WebhookHeaders); err != nil {
+		log.Printf("Warning: Failed to trigger success webhook: %v", err)
 	}
 	log.Println("GitHub backup job completed")
 }

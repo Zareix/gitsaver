@@ -14,15 +14,25 @@ import (
 func ExtractTarGz(tarGzPath, destPath string) error {
 	file, err := os.Open(tarGzPath)
 	if err != nil {
-		return fmt.Errorf("Failed to open tar.gz file: %w", err)
+		return fmt.Errorf("failed to open tar.gz file: %w", err)
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			log.Printf("Failed to close file: %v", err)
+		}
+	}(file)
 
 	gzipReader, err := gzip.NewReader(file)
 	if err != nil {
-		return fmt.Errorf("Failed to create gzip reader: %w", err)
+		return fmt.Errorf("failed to create gzip reader: %w", err)
 	}
-	defer gzipReader.Close()
+	defer func(gzipReader *gzip.Reader) {
+		err := gzipReader.Close()
+		if err != nil {
+			log.Printf("Failed to close gzip reader: %v", err)
+		}
+	}(gzipReader)
 
 	tarReader := tar.NewReader(gzipReader)
 
@@ -32,12 +42,9 @@ func ExtractTarGz(tarGzPath, destPath string) error {
 			break
 		}
 		if err != nil {
-			return fmt.Errorf("Failed to read tar header: %w", err)
+			return fmt.Errorf("failed to read tar header: %w", err)
 		}
 
-		// The tarball from GitHub contains a parent directory,
-		// we want to extract the contents of that directory.
-		// Example: github-user-repo-name-deadbeef/
 		parts := strings.Split(header.Name, "/")
 		if len(parts) > 1 {
 			header.Name = strings.Join(parts[1:], "/")
@@ -50,26 +57,32 @@ func ExtractTarGz(tarGzPath, destPath string) error {
 		switch header.Typeflag {
 		case tar.TypeDir:
 			if err := os.MkdirAll(target, 0755); err != nil {
-				return fmt.Errorf("Failed to create directory: %w", err)
+				return fmt.Errorf("failed to create directory: %w", err)
 			}
 		case tar.TypeReg:
 			if header.Name == "" {
 				continue
 			}
 			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
-				return fmt.Errorf("Failed to create directory for file: %w", err)
+				return fmt.Errorf("failed to create directory for file: %w", err)
 			}
 
 			outFile, err := os.Create(target)
 			if err != nil {
-				return fmt.Errorf("Failed to create file: %w", err)
+				return fmt.Errorf("failed to create file: %w", err)
 			}
 
 			if _, err := io.Copy(outFile, tarReader); err != nil {
-				outFile.Close()
-				return fmt.Errorf("Failed to copy file content: %w", err)
+				err := outFile.Close()
+				if err != nil {
+					return err
+				}
+				return fmt.Errorf("failed to copy file content: %w", err)
 			}
-			outFile.Close()
+			err = outFile.Close()
+			if err != nil {
+				return err
+			}
 		default:
 			log.Printf("Unsupported tar header type: %c for %s\n", header.Typeflag, header.Name)
 		}
@@ -77,7 +90,7 @@ func ExtractTarGz(tarGzPath, destPath string) error {
 	log.Printf("Successfully extracted %s to %s", tarGzPath, destPath)
 
 	if err := os.Remove(tarGzPath); err != nil {
-		return fmt.Errorf("Failed to remove tar.gz file: %w", err)
+		return fmt.Errorf("failed to remove tar.gz file: %w", err)
 	}
 
 	return nil

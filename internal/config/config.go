@@ -29,9 +29,12 @@ type GithubProviderConfig struct {
 }
 
 type Config struct {
-	Github          GithubProviderConfig
-	DestinationPath string
-	Port            int
+	Github            GithubProviderConfig
+	DestinationPath   string
+	Port              int
+	SuccessWebhookURL string
+	FailureWebhookURL string
+	WebhookHeaders    map[string]string
 }
 
 func LoadConfig() *Config {
@@ -53,10 +56,17 @@ func LoadConfig() *Config {
 		log.Fatalf("Invalid PORT value: %v", err)
 	}
 
+	successWebhookURL := os.Getenv("WEBHOOK_SUCCESS_URL")
+	failureWebhookURL := os.Getenv("WEBHOOK_FAILURE_URL")
+	webhookHeaders := parseWebhookHeaders(os.Getenv("WEBHOOK_HEADERS"))
+
 	return &Config{
-		Github:          loadGithubConfig(),
-		DestinationPath: destinationPath,
-		Port:            port,
+		Github:            loadGithubConfig(),
+		DestinationPath:   destinationPath,
+		SuccessWebhookURL: successWebhookURL,
+		WebhookHeaders:    webhookHeaders,
+		FailureWebhookURL: failureWebhookURL,
+		Port:              port,
 	}
 }
 
@@ -86,4 +96,24 @@ func loadGithubConfig() GithubProviderConfig {
 func isTrueEnvVar(value string) bool {
 	val := strings.ToLower(value)
 	return val == "true" || val == "1" || val == "yes" || val == "y" || val == "on" || val == "enabled" || val == "enable"
+}
+
+func parseWebhookHeaders(headersStr string) map[string]string {
+	headers := make(map[string]string)
+	if headersStr == "" {
+		return headers
+	}
+
+	pairs := strings.Split(headersStr, ",")
+	for _, pair := range pairs {
+		parts := strings.SplitN(strings.TrimSpace(pair), ":", 2)
+		if len(parts) == 2 {
+			key := strings.TrimSpace(parts[0])
+			value := strings.TrimSpace(parts[1])
+			if key != "" {
+				headers[key] = value
+			}
+		}
+	}
+	return headers
 }

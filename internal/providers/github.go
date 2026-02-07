@@ -2,6 +2,7 @@ package providers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"gitsaver/internal/config"
 	"gitsaver/internal/tarball"
@@ -43,7 +44,7 @@ func getClient(ctx context.Context, cfg *config.Config) (*GithubClient, error) {
 
 	user, _, err := client.Users.Get(ctx, "")
 	if err != nil {
-		return nil, fmt.Errorf("Failed to authenticate with GitHub: %w", err)
+		return nil, fmt.Errorf("failed to authenticate with GitHub: %w", err)
 	}
 	log.Println("Logged in as:", *user.Login)
 
@@ -62,14 +63,14 @@ func BackupGithubRepositories(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 
-	repos := []*github.Repository{}
+	var repos []*github.Repository
 	if gClient.isAuthenticated {
 		repos, err = getAuthenticatedRepositoriesList(gClient)
 	} else {
 		repos, err = getUnauthenticatedRepositoriesList(gClient)
 	}
 	if err != nil {
-		return fmt.Errorf("Error fetching repositories list: %w", err)
+		return fmt.Errorf("error fetching repositories list: %w", err)
 	}
 
 	var wg sync.WaitGroup
@@ -85,12 +86,12 @@ func BackupGithubRepositories(ctx context.Context, cfg *config.Config) error {
 			case config.Tarball:
 				err := downloadRepositoryTarball(gClient, *repo, cfg.DestinationPath, cfg.Github.ExtractTarballs)
 				if err != nil {
-					log.Println(fmt.Errorf("Error downloading repository %s: %w", *repo.Name, err).Error())
+					log.Println(fmt.Errorf("error downloading repository %s: %w", *repo.Name, err).Error())
 				}
 			case config.Git:
 				err := cloneRepository(*cfg, *repo.CloneURL, filepath.Join(cfg.DestinationPath, *repo.Owner.Login, *repo.Name))
 				if err != nil {
-					log.Println(fmt.Errorf("Error cloning repository %s: %w", *repo.Name, err).Error())
+					log.Println(fmt.Errorf("error cloning repository %s: %w", *repo.Name, err).Error())
 				}
 			}
 		}(repo)
@@ -105,7 +106,7 @@ func getUnauthenticatedRepositoriesList(client *GithubClient) ([]*github.Reposit
 		return nil, fmt.Errorf("GitHub username is required for unauthenticated requests")
 	}
 
-	repos := []*github.Repository{}
+	var repos []*github.Repository
 	opt := &github.RepositoryListByUserOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
@@ -125,7 +126,7 @@ func getUnauthenticatedRepositoriesList(client *GithubClient) ([]*github.Reposit
 }
 
 func getAuthenticatedRepositoriesList(client *GithubClient) ([]*github.Repository, error) {
-	repos := []*github.Repository{}
+	var repos []*github.Repository
 	opt := &github.RepositoryListByAuthenticatedUserOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
@@ -175,7 +176,12 @@ func downloadRepositoryTarball(client *GithubClient, repo github.Repository, pat
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Printf("Error closing response body for repository %s/%s: %v", *repo.Owner.Login, *repo.Name, err)
+		}
+	}(resp.Body)
 
 	if err := os.MkdirAll(filepath.Join(path, *repo.Owner.Login), 0755); err != nil {
 		return err
@@ -186,7 +192,12 @@ func downloadRepositoryTarball(client *GithubClient, repo github.Repository, pat
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer func(out *os.File) {
+		err := out.Close()
+		if err != nil {
+			log.Printf("Error closing file %s: %v", filePath, err)
+		}
+	}(out)
 
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
@@ -213,7 +224,7 @@ func cloneRepository(cfg config.Config, repoUrl, destPath string) error {
 
 		err = os.RemoveAll(destPath)
 		if err != nil {
-			return fmt.Errorf("Failed to remove existing repository: %w", err)
+			return fmt.Errorf("failed to remove existing repository: %w", err)
 		}
 	}
 
@@ -224,20 +235,20 @@ func cloneRepository(cfg config.Config, repoUrl, destPath string) error {
 		Auth: auth,
 	})
 	if err != nil {
-		return fmt.Errorf("Failed to clone repository: %w", err)
+		return fmt.Errorf("failed to clone repository: %w", err)
 	}
 
 	remote, err := repo.Remote("origin")
 	if err != nil {
-		return fmt.Errorf("Failed to get remote: %w", err)
+		return fmt.Errorf("failed to get remote: %w", err)
 	}
 
 	if err := remote.Fetch(&git.FetchOptions{
 		RefSpecs: []gitConfig.RefSpec{"refs/*:refs/*"},
 		Auth:     auth,
 	}); err != nil {
-		if err != git.NoErrAlreadyUpToDate {
-			return fmt.Errorf("Failed to fetch updates: %w", err)
+		if !errors.Is(err, git.NoErrAlreadyUpToDate) {
+			return fmt.Errorf("failed to fetch updates: %w", err)
 		}
 	}
 
