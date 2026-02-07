@@ -7,6 +7,7 @@ on:
 
 env:
   GO_VERSION: 1.25.5
+  JUST_VERSION: 1.5.0
 
 jobs:
   build:
@@ -20,6 +21,10 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
+
+      - uses: extractions/setup-just@v3
+        with:
+          just-version: ${{ env.JUST_VERSION }}
 
       - name: Build
         run: make build
