@@ -7,6 +7,7 @@ services:
     container_name: gitsaver
     restart: unless-stopped
     environment:
+      TZ: Europe/Paris
       GITHUB_CRON: ${GITHUB_CRON}
       GITHUB_TOKEN: ${GITHUB_TOKEN}
       GITHUB_USERNAME: ${GITHUB_USERNAME}
