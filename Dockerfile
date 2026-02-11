@@ -2,6 +2,8 @@ FROM golang:1.25.5-alpine3.21 AS builder
 
 WORKDIR /app
 
+RUN apk add --no-cache tzdata
+
 COPY go.mod go.sum ./
 
 RUN go mod download
