@@ -5,7 +5,7 @@ go 1.25.5
 require (
 	github.com/go-co-op/gocron-ui v0.3.0
 	github.com/go-co-op/gocron/v2 v2.19.1
-	github.com/go-git/go-git/v6 v6.0.0-20260214095735-e32ef249aa35
+	github.com/go-git/go-git/v6 v6.0.0-20260215142411-564b7d90c6a3
 	github.com/google/go-github/v81 v81.0.0
 	github.com/joho/godotenv v1.5.1
 )
@@ -24,7 +24,7 @@ require (
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/jonboulle/clockwork v0.5.0 // indirect
-	github.com/kevinburke/ssh_config v1.4.0 // indirect
+	github.com/kevinburke/ssh_config v1.5.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/pjbgf/sha1cd v0.5.0 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
