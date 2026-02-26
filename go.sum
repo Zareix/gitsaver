@@ -8,6 +8,8 @@ github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5 h1:0CwZNZbxp69SHPd
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5/go.mod h1:wHh0iHkYZB8zMSxRWpUBQtwG5a7fFgvEO+odwuTv2gs=
 github.com/cloudflare/circl v1.6.1 h1:zqIqSPIndyBh1bjLVVDHMPpVKqp8Su/V+6MeDzzQBQ0=
 github.com/cloudflare/circl v1.6.1/go.mod h1:uddAzsPgqdMAYatqJ0lsjX1oECcQLIlRpzZh3pJrofs=
+github.com/cloudflare/circl v1.6.3 h1:9GPOhQGF9MCYUeXyMYlqTR6a5gTrgR/fBLXvUgtVcg8=
+github.com/cloudflare/circl v1.6.3/go.mod h1:2eXP6Qfat4O/Yhh8BznvKnJ+uzEoTQ6jVKJRn81BiS4=
 github.com/cyphar/filepath-securejoin v0.6.1 h1:5CeZ1jPXEiYt3+Z6zqprSAgSWiggmpVyciv8syjIpVE=
 github.com/cyphar/filepath-securejoin v0.6.1/go.mod h1:A8hd4EnAeyujCJRrICiOWqjS1AX0a9kM5XL+NwKoYSc=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -57,6 +59,8 @@ github.com/go-git/go-git/v6 v6.0.0-20260222090600-424e9964d3a3 h1:lgm4zCVktmdFyA
 github.com/go-git/go-git/v6 v6.0.0-20260222090600-424e9964d3a3/go.mod h1:B88nWzfnhTlIikoJ4d84Nc9noKS5mJoA7SgDdkt0aPU=
 github.com/go-git/go-git/v6 v6.0.0-20260223163356-097ea99c34a7 h1:Nnl2N5L5DSMTbfSU3zhBe/9U5rBGYGSigzb2rAOqb80=
 github.com/go-git/go-git/v6 v6.0.0-20260223163356-097ea99c34a7/go.mod h1:B88nWzfnhTlIikoJ4d84Nc9noKS5mJoA7SgDdkt0aPU=
+github.com/go-git/go-git/v6 v6.0.0-20260225231818-d48496f29db9 h1:L3NCQKxFkHRqKeeh+K1iSydGw8P9mDTMsuHF15R6ioI=
+github.com/go-git/go-git/v6 v6.0.0-20260225231818-d48496f29db9/go.mod h1:D38kq0ubN7UU0LOiYts1SuSzZ13NDWmTlLszhYp3Qb0=
 github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 h1:f+oWsMOmNPc8JmEHVZIycC7hBoQxHH9pNKQORJNozsQ=
 github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8/go.mod h1:wcDNUvekVysuuOpQKo3191zZyTpiI6se1N1ULghS0sw=
 github.com/google/go-cmp v0.5.2/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
