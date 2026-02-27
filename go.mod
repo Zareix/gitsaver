@@ -7,6 +7,7 @@ require (
 	github.com/go-co-op/gocron/v2 v2.19.1
 	github.com/go-git/go-git/v6 v6.0.0-20260226223551-7ebcfb20429b
 	github.com/google/go-github/v81 v81.0.0
+	github.com/google/go-github/v84 v84.0.0
 	github.com/joho/godotenv v1.5.1
 )
 
@@ -19,7 +20,7 @@ require (
 	github.com/go-git/gcfg/v2 v2.0.2 // indirect
 	github.com/go-git/go-billy/v6 v6.0.0-20260226131633-45bd0956d66f // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
-	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
