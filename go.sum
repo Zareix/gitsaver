@@ -31,6 +31,8 @@ github.com/go-git/go-billy/v6 v6.0.0-20251217170237-e9738f50a3cd h1:Gd/f9cGi/3h1
 github.com/go-git/go-billy/v6 v6.0.0-20251217170237-e9738f50a3cd/go.mod h1:d3XQcsHu1idnquxt48kAv+h+1MUiYKLH/e7LAzjP+pI=
 github.com/go-git/go-billy/v6 v6.0.0-20260114122816-19306b749ecc h1:rhkjrnRkamkRC7woapp425E4CAH6RPcqsS9X8LA93IY=
 github.com/go-git/go-billy/v6 v6.0.0-20260114122816-19306b749ecc/go.mod h1:X1oe0Z2qMsa9hkar3AAPuL9hu4Mi3ztXEjdqRhr6fcc=
+github.com/go-git/go-billy/v6 v6.0.0-20260226131633-45bd0956d66f h1:Uvbx7nITO3Sd1GdXarX0TbyYmOaSNIJP0mm4LocEyyA=
+github.com/go-git/go-billy/v6 v6.0.0-20260226131633-45bd0956d66f/go.mod h1:ZW9JC5gionMP1kv5uiaOaV23q0FFmNrVOV8VW+y/acc=
 github.com/go-git/go-git-fixtures/v5 v5.1.2-0.20251229094738-4b14af179146 h1:xYfxAopYyL44ot6dMBIb1Z1njFM0ZBQ99HdIB99KxLs=
 github.com/go-git/go-git-fixtures/v5 v5.1.2-0.20251229094738-4b14af179146/go.mod h1:QE/75B8tBSLNGyUUbA9tw3EGHoFtYOtypa2h8YJxsWI=
 github.com/go-git/go-git/v6 v6.0.0-20251231065035-29ae690a9f19 h1:0lz2eJScP8v5YZQsrEw+ggWC5jNySjg4bIZo5BIh6iI=
@@ -61,6 +63,8 @@ github.com/go-git/go-git/v6 v6.0.0-20260223163356-097ea99c34a7 h1:Nnl2N5L5DSMTbf
 github.com/go-git/go-git/v6 v6.0.0-20260223163356-097ea99c34a7/go.mod h1:B88nWzfnhTlIikoJ4d84Nc9noKS5mJoA7SgDdkt0aPU=
 github.com/go-git/go-git/v6 v6.0.0-20260225231818-d48496f29db9 h1:L3NCQKxFkHRqKeeh+K1iSydGw8P9mDTMsuHF15R6ioI=
 github.com/go-git/go-git/v6 v6.0.0-20260225231818-d48496f29db9/go.mod h1:D38kq0ubN7UU0LOiYts1SuSzZ13NDWmTlLszhYp3Qb0=
+github.com/go-git/go-git/v6 v6.0.0-20260226223551-7ebcfb20429b h1:EzOgxcFT95kBPVs7A5Cjztb9BDizXgVpzvwsRed+c3U=
+github.com/go-git/go-git/v6 v6.0.0-20260226223551-7ebcfb20429b/go.mod h1:V/qoTD4qCYizR+fKFA9++d2APoE8Yheci7dXALaSeuI=
 github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 h1:f+oWsMOmNPc8JmEHVZIycC7hBoQxHH9pNKQORJNozsQ=
 github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8/go.mod h1:wcDNUvekVysuuOpQKo3191zZyTpiI6se1N1ULghS0sw=
 github.com/google/go-cmp v0.5.2/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
