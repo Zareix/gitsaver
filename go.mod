@@ -5,7 +5,7 @@ go 1.25.5
 require (
 	github.com/go-co-op/gocron-ui v0.3.0
 	github.com/go-co-op/gocron/v2 v2.19.1
-	github.com/go-git/go-git/v6 v6.0.0-20260225231818-d48496f29db9
+	github.com/go-git/go-git/v6 v6.0.0-20260226223551-7ebcfb20429b
 	github.com/google/go-github/v81 v81.0.0
 	github.com/joho/godotenv v1.5.1
 )
@@ -17,7 +17,7 @@ require (
 	github.com/cyphar/filepath-securejoin v0.6.1 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/go-git/gcfg/v2 v2.0.2 // indirect
-	github.com/go-git/go-billy/v6 v6.0.0-20260114122816-19306b749ecc // indirect
+	github.com/go-git/go-billy/v6 v6.0.0-20260226131633-45bd0956d66f // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
