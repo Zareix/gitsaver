@@ -5,7 +5,7 @@ go 1.25.5
 require (
 	github.com/go-co-op/gocron-ui v0.3.0
 	github.com/go-co-op/gocron/v2 v2.19.1
-	github.com/go-git/go-git/v6 v6.0.0-20260227140013-e44fe76b4d64
+	github.com/go-git/go-git/v6 v6.0.0-20260227233803-efde8c49a5e2
 	github.com/google/go-github/v81 v81.0.0
 	github.com/joho/godotenv v1.5.1
 )
