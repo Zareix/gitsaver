@@ -27,7 +27,7 @@ type GithubClient struct {
 	username        string
 }
 
-func getClient(ctx context.Context, cfg *config.Config) (*GithubClient, error) {
+func getClient(ctx context.Context, cfg config.Config) (*GithubClient, error) {
 	client := github.NewClient(nil)
 
 	if cfg.Github.Token == "" {
@@ -56,7 +56,7 @@ func getClient(ctx context.Context, cfg *config.Config) (*GithubClient, error) {
 	}, nil
 }
 
-func BackupGithubRepositories(ctx context.Context, cfg *config.Config) error {
+func BackupGithubRepositories(ctx context.Context, cfg config.Config) error {
 	log.Printf("Starting GitHub repositories backup with %s method...", cfg.Github.BackupMethod)
 	gClient, err := getClient(ctx, cfg)
 	if err != nil {
@@ -78,27 +78,31 @@ func BackupGithubRepositories(ctx context.Context, cfg *config.Config) error {
 		wg.Add(1)
 		go func(repo *github.Repository) {
 			defer wg.Done()
-			if shouldSkipRepository(*repo, cfg.Github, gClient.username) {
-				return
-			}
-
-			switch cfg.Github.BackupMethod {
-			case config.Tarball:
-				err := downloadRepositoryTarball(gClient, *repo, cfg.DestinationPath, cfg.Github.ExtractTarballs)
-				if err != nil {
-					log.Println(fmt.Errorf("error downloading repository %s: %w", *repo.Name, err).Error())
-				}
-			case config.Git:
-				err := cloneRepository(*cfg, *repo.CloneURL, filepath.Join(cfg.DestinationPath, *repo.Owner.Login, *repo.Name))
-				if err != nil {
-					log.Println(fmt.Errorf("error cloning repository %s: %w", *repo.Name, err).Error())
-				}
-			}
+			backupRepository(cfg, gClient, repo)
 		}(repo)
 	}
 	wg.Wait()
 
 	return nil
+}
+
+func backupRepository(cfg config.Config, gClient *GithubClient, repo *github.Repository) {
+	if shouldSkipRepository(*repo, cfg.Github, gClient.username) {
+		return
+	}
+
+	switch cfg.Github.BackupMethod {
+	case config.Tarball:
+		err := downloadRepositoryTarball(gClient, *repo, cfg.DestinationPath, cfg.Github.ExtractTarballs)
+		if err != nil {
+			log.Println(fmt.Errorf("error downloading repository %s: %w", *repo.Name, err).Error())
+		}
+	case config.Git:
+		err := cloneRepository(cfg, *repo.CloneURL, filepath.Join(cfg.DestinationPath, *repo.Owner.Login, *repo.Name))
+		if err != nil {
+			log.Println(fmt.Errorf("error cloning repository %s: %w", *repo.Name, err).Error())
+		}
+	}
 }
 
 func getUnauthenticatedRepositoriesList(client *GithubClient) ([]*github.Repository, error) {

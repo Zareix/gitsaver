@@ -37,7 +37,7 @@ type Config struct {
 	WebhookHeaders    map[string]string
 }
 
-func LoadConfig() *Config {
+func LoadConfig() Config {
 	if err := godotenv.Load(); err != nil {
 		log.Println("Could not load .env file, proceeding with environment variables")
 	}
@@ -60,7 +60,7 @@ func LoadConfig() *Config {
 	failureWebhookURL := os.Getenv("WEBHOOK_FAILURE_URL")
 	webhookHeaders := parseWebhookHeaders(os.Getenv("WEBHOOK_HEADERS"))
 
-	return &Config{
+	return Config{
 		Github:            loadGithubConfig(),
 		DestinationPath:   destinationPath,
 		SuccessWebhookURL: successWebhookURL,
