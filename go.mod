@@ -5,7 +5,7 @@ go 1.25.5
 require (
 	github.com/go-co-op/gocron-ui v0.3.0
 	github.com/go-co-op/gocron/v2 v2.19.1
-	github.com/go-git/go-git/v6 v6.0.0-20260312103649-3b3581068cee
+	github.com/go-git/go-git/v6 v6.0.0-20260313081548-799bb393a8ed
 	github.com/google/go-github/v81 v81.0.0
 	github.com/joho/godotenv v1.5.1
 )
@@ -32,5 +32,6 @@ require (
 	github.com/sergi/go-diff v1.4.0 // indirect
 	golang.org/x/crypto v0.48.0 // indirect
 	golang.org/x/net v0.50.0 // indirect
+	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 )
