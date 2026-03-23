@@ -31,6 +31,8 @@ github.com/go-git/go-git/v6 v6.0.0-20260320111621-ea91339c5263 h1:IB2wgVZc8Q7h2l
 github.com/go-git/go-git/v6 v6.0.0-20260320111621-ea91339c5263/go.mod h1:DI8P0o+7Go2ainlUPsVcn9PMtEkg3umUXnxw6Kxppag=
 github.com/go-git/go-git/v6 v6.0.0-20260322064825-e9e97138967c h1:7Az2tUZx6MwsC7p5PuhIIrkqdEkUpY3eeseNBphesdQ=
 github.com/go-git/go-git/v6 v6.0.0-20260322064825-e9e97138967c/go.mod h1:DI8P0o+7Go2ainlUPsVcn9PMtEkg3umUXnxw6Kxppag=
+github.com/go-git/go-git/v6 v6.0.0-20260323155804-7ae1cb62d6b7 h1:KwyjFe7h6C1dagrPIkRoHKCqrWU8DH+0p8P6bKeTm8U=
+github.com/go-git/go-git/v6 v6.0.0-20260323155804-7ae1cb62d6b7/go.mod h1:DI8P0o+7Go2ainlUPsVcn9PMtEkg3umUXnxw6Kxppag=
 github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 h1:f+oWsMOmNPc8JmEHVZIycC7hBoQxHH9pNKQORJNozsQ=
 github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8/go.mod h1:wcDNUvekVysuuOpQKo3191zZyTpiI6se1N1ULghS0sw=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
