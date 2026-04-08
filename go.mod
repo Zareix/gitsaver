@@ -7,6 +7,7 @@ require (
 	github.com/go-co-op/gocron/v2 v2.20.0
 	github.com/go-git/go-git/v6 v6.0.0-alpha.1
 	github.com/google/go-github/v81 v81.0.0
+	github.com/google/go-github/v84 v84.0.0
 	github.com/joho/godotenv v1.5.1
 )
 
