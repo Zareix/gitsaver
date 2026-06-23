@@ -7,15 +7,29 @@ import (
 	"gitsaver/internal/providers"
 	"gitsaver/internal/webhook"
 	"log"
+	"log/slog"
 	"net/http"
+	"os"
 
 	"github.com/go-co-op/gocron-ui/server"
 	"github.com/go-co-op/gocron/v2"
 )
 
-const Version = "1.2.3"
+const Version = "1.3.0"
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "health" {
+		port := os.Getenv("PORT")
+		if port == "" {
+			port = "8080"
+		}
+		resp, err := http.Get("http://localhost:" + port + "/api/jobs")
+		if err != nil || resp.StatusCode >= 400 {
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
+
 	ctx := context.Background()
 	cfg := config.LoadConfig()
 
@@ -33,39 +47,44 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Println("Scheduled GitHub backup job with cron:", cfg.Github.Cron)
+		slog.Info("Scheduled GitHub backup job with cron", "cron", cfg.Github.Cron)
 	}
 
 	if cfg.Github.RunOnStartup {
-		log.Println("Running GitHub backup job on startup")
+		slog.Info("Running GitHub backup job on startup")
 		go func() {
 			runGithubBackupJob(ctx, cfg)
 		}()
 	}
 
 	if len(scheduler.Jobs()) == 0 {
-		log.Println("No backup jobs scheduled. Exiting.")
+		slog.Info("No backup jobs scheduled. Exiting.")
 		return
 	}
 
 	scheduler.Start()
 
 	srv := server.NewServer(scheduler, cfg.Port, server.WithTitle("Gitsaver Scheduler"))
-	log.Printf("Gitsaver available at http://localhost:%d", cfg.Port)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), srv.Router))
+	slog.Info("Gitsaver is running", "version", Version, "port", cfg.Port)
+	err = http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), srv.Router)
+	if err != nil {
+		slog.Error("Failed to start HTTP server:", err)
+		return
+	}
 }
 
 func runGithubBackupJob(ctx context.Context, cfg config.Config) {
 	err := providers.BackupGithubRepositories(ctx, cfg)
 	if err != nil {
 		if webhookErr := webhook.TriggerWebhook(cfg.FailureWebhookURL, "failure", fmt.Sprintf("GitHub backup failed: %v", err), cfg.WebhookHeaders); webhookErr != nil {
-			log.Printf("Warning: Failed to trigger failure webhook: %v", webhookErr)
+			slog.Warn("Failed to trigger failure webhook:", webhookErr)
 		}
-		log.Fatal("GitHub backup job failed:", err)
+		slog.Error("GitHub backup job failed:", err)
+		return
 	}
 
 	if err := webhook.TriggerWebhook(cfg.SuccessWebhookURL, "success", "GitHub backup completed successfully", cfg.WebhookHeaders); err != nil {
-		log.Printf("Warning: Failed to trigger success webhook: %v", err)
+		slog.Warn("Failed to trigger success webhook:", err)
 	}
-	log.Println("GitHub backup job completed")
+	slog.Info("GitHub backup job completed")
 }

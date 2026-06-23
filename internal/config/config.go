@@ -2,6 +2,7 @@ package config
 
 import (
 	"log"
+	"log/slog"
 	"os"
 	"strconv"
 	"strings"
@@ -39,7 +40,7 @@ type Config struct {
 
 func LoadConfig() Config {
 	if err := godotenv.Load(); err != nil {
-		log.Println("Could not load .env file, proceeding with environment variables")
+		slog.Info("Could not load .env file, proceeding with environment variables")
 	}
 
 	destinationPath, destinationPathExists := os.LookupEnv("DESTINATION_PATH")
