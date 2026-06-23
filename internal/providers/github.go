@@ -16,6 +16,7 @@ import (
 
 	"github.com/go-git/go-git/v6"
 	gitConfig "github.com/go-git/go-git/v6/config"
+	gitClient "github.com/go-git/go-git/v6/plumbing/client"
 	httpTransport "github.com/go-git/go-git/v6/plumbing/transport/http"
 	"github.com/google/go-github/v81/github"
 )
@@ -235,12 +236,13 @@ func cloneRepository(cfg config.Config, repoUrl, destPath string) error {
 	log.Println("Cloning repository", repoUrl, "to", destPath)
 
 	repo, err := git.PlainClone(destPath, &git.CloneOptions{
-		URL:  repoUrl,
-		Auth: auth,
+		URL:           repoUrl,
+		ClientOptions: []gitClient.Option{gitClient.WithHTTPAuth(auth)},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to clone repository: %w", err)
 	}
+	defer func() { _ = repo.Close() }()
 
 	remote, err := repo.Remote("origin")
 	if err != nil {
@@ -248,8 +250,8 @@ func cloneRepository(cfg config.Config, repoUrl, destPath string) error {
 	}
 
 	if err := remote.Fetch(&git.FetchOptions{
-		RefSpecs: []gitConfig.RefSpec{"refs/*:refs/*"},
-		Auth:     auth,
+		RefSpecs:      []gitConfig.RefSpec{"refs/*:refs/*"},
+		ClientOptions: []gitClient.Option{gitClient.WithHTTPAuth(auth)},
 	}); err != nil {
 		if !errors.Is(err, git.NoErrAlreadyUpToDate) {
 			return fmt.Errorf("failed to fetch updates: %w", err)
