@@ -1,12 +1,13 @@
 module gitsaver
 
-go 1.25.5
+go 1.26.0
 
 require (
 	github.com/go-co-op/gocron-ui v0.3.0
 	github.com/go-co-op/gocron/v2 v2.21.2
 	github.com/go-git/go-git/v6 v6.0.0-alpha.4
 	github.com/google/go-github/v81 v81.0.0
+	github.com/google/go-github/v91 v91.0.0
 	github.com/joho/godotenv v1.5.1
 )
 
