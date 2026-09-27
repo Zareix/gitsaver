@@ -1,10 +1,9 @@
 package config
 
 import (
-	"log"
+	"fmt"
 	"log/slog"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/joho/godotenv"
@@ -32,66 +31,68 @@ type GithubProviderConfig struct {
 type Config struct {
 	Github            GithubProviderConfig
 	DestinationPath   string
-	Port              int
 	SuccessWebhookURL string
 	FailureWebhookURL string
 	WebhookHeaders    map[string]string
 }
 
-func LoadConfig() Config {
+func LoadConfig() (Config, error) {
 	if err := godotenv.Load(); err != nil {
 		slog.Info("Could not load .env file, proceeding with environment variables")
 	}
 
-	destinationPath, destinationPathExists := os.LookupEnv("DESTINATION_PATH")
-	if !destinationPathExists {
+	destinationPath := os.Getenv("DESTINATION_PATH")
+	if destinationPath == "" {
 		destinationPath = "./output"
-	}
-
-	portEnv := os.Getenv("PORT")
-	if portEnv == "" {
-		portEnv = "8080"
-	}
-	port, err := strconv.Atoi(portEnv)
-	if err != nil {
-		log.Fatalf("Invalid PORT value: %v", err)
 	}
 
 	successWebhookURL := os.Getenv("WEBHOOK_SUCCESS_URL")
 	failureWebhookURL := os.Getenv("WEBHOOK_FAILURE_URL")
 	webhookHeaders := parseWebhookHeaders(os.Getenv("WEBHOOK_HEADERS"))
 
+	githubConfig, err := loadGithubConfig()
+	if err != nil {
+		return Config{}, err
+	}
+
 	return Config{
-		Github:            loadGithubConfig(),
+		Github:            githubConfig,
 		DestinationPath:   destinationPath,
 		SuccessWebhookURL: successWebhookURL,
 		WebhookHeaders:    webhookHeaders,
 		FailureWebhookURL: failureWebhookURL,
-		Port:              port,
-	}
+	}, nil
 }
 
-func loadGithubConfig() GithubProviderConfig {
+func loadGithubConfig() (GithubProviderConfig, error) {
 	backupMethodEnv := os.Getenv("GITHUB_BACKUP_METHOD")
 	var backupMethod BackupMethod
 	switch strings.ToLower(backupMethodEnv) {
 	case "git":
 		backupMethod = Git
-	default:
+	case "", "tarball":
 		backupMethod = Tarball
+	default:
+		return GithubProviderConfig{}, fmt.Errorf("invalid GITHUB_BACKUP_METHOD %q, expected %q or %q", backupMethodEnv, Tarball, Git)
+	}
+
+	token := os.Getenv("GITHUB_TOKEN")
+	username := os.Getenv("GITHUB_USERNAME")
+	if token == "" && username == "" {
+		return GithubProviderConfig{}, fmt.Errorf("GITHUB_TOKEN or GITHUB_USERNAME is required")
 	}
 
 	return GithubProviderConfig{
 		BackupMethod:           backupMethod,
 		RunOnStartup:           isTrueEnvVar(os.Getenv("GITHUB_RUN_ON_STARTUP")),
 		Cron:                   os.Getenv("GITHUB_CRON"),
-		Token:                  os.Getenv("GITHUB_TOKEN"),
-		Username:               os.Getenv("GITHUB_USERNAME"),
+		Token:                  token,
+		Username:               username,
 		IncludeOtherUsersRepos: isTrueEnvVar(os.Getenv("GITHUB_INCLUDE_OTHER_USERS_REPOS")),
 		IncludeForkedRepos:     isTrueEnvVar(os.Getenv("GITHUB_INCLUDE_FORKED_REPOS")),
 		IncludeArchivedRepos:   isTrueEnvVar(os.Getenv("GITHUB_INCLUDE_ARCHIVED_REPOS")),
 		ExtractTarballs:        isTrueEnvVar(os.Getenv("GITHUB_EXTRACT_TARBALLS")),
-	}
+	}, nil
 }
 
 func isTrueEnvVar(value string) bool {

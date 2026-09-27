@@ -5,7 +5,7 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,9 +17,8 @@ func ExtractTarGz(tarGzPath, destPath string) error {
 		return fmt.Errorf("failed to open tar.gz file: %w", err)
 	}
 	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			log.Printf("Failed to close file: %v", err)
+		if err := file.Close(); err != nil {
+			slog.Error("Failed to close file", "path", tarGzPath, "error", err)
 		}
 	}(file)
 
@@ -28,9 +27,8 @@ func ExtractTarGz(tarGzPath, destPath string) error {
 		return fmt.Errorf("failed to create gzip reader: %w", err)
 	}
 	defer func(gzipReader *gzip.Reader) {
-		err := gzipReader.Close()
-		if err != nil {
-			log.Printf("Failed to close gzip reader: %v", err)
+		if err := gzipReader.Close(); err != nil {
+			slog.Error("Failed to close gzip reader", "error", err)
 		}
 	}(gzipReader)
 
@@ -46,24 +44,27 @@ func ExtractTarGz(tarGzPath, destPath string) error {
 		}
 
 		parts := strings.Split(header.Name, "/")
-		if len(parts) > 1 {
-			header.Name = strings.Join(parts[1:], "/")
-		} else {
+		if len(parts) <= 1 {
+			continue
+		}
+		header.Name = strings.Join(parts[1:], "/")
+
+		if header.Name == "" {
 			continue
 		}
 
 		target := filepath.Join(destPath, header.Name)
+		if !isWithinDir(destPath, target) {
+			return fmt.Errorf("illegal path in tarball: %q", header.Name)
+		}
 
 		switch header.Typeflag {
 		case tar.TypeDir:
-			if err := os.MkdirAll(target, 0755); err != nil {
+			if err := os.MkdirAll(target, 0o755); err != nil {
 				return fmt.Errorf("failed to create directory: %w", err)
 			}
 		case tar.TypeReg:
-			if header.Name == "" {
-				continue
-			}
-			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 				return fmt.Errorf("failed to create directory for file: %w", err)
 			}
 
@@ -73,25 +74,30 @@ func ExtractTarGz(tarGzPath, destPath string) error {
 			}
 
 			if _, err := io.Copy(outFile, tarReader); err != nil {
-				err := outFile.Close()
-				if err != nil {
-					return err
-				}
+				_ = outFile.Close()
 				return fmt.Errorf("failed to copy file content: %w", err)
 			}
-			err = outFile.Close()
-			if err != nil {
-				return err
+			if err := outFile.Close(); err != nil {
+				return fmt.Errorf("failed to close file: %w", err)
 			}
 		default:
-			log.Printf("Unsupported tar header type: %c for %s\n", header.Typeflag, header.Name)
+			slog.Debug("Skipping unsupported tar entry", "type", string(header.Typeflag), "name", header.Name)
 		}
 	}
-	log.Printf("Successfully extracted %s to %s", tarGzPath, destPath)
+
+	slog.Info("Extracted tarball", "path", tarGzPath, "dest", destPath)
 
 	if err := os.Remove(tarGzPath); err != nil {
 		return fmt.Errorf("failed to remove tar.gz file: %w", err)
 	}
 
 	return nil
+}
+
+func isWithinDir(dir, target string) bool {
+	rel, err := filepath.Rel(dir, target)
+	if err != nil {
+		return false
+	}
+	return rel == "." || (!strings.HasPrefix(rel, ".."+string(filepath.Separator)) && rel != "..")
 }

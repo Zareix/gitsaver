@@ -16,5 +16,3 @@ services:
       GITHUB_EXTRACT_TARBALLS: ${GITHUB_EXTRACT_TARBALLS}
     volumes:
       - ${DESTINATION_PATH}:/output
-    ports:
-      - "8080:8080"

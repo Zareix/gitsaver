@@ -1,0 +1,11 @@
+.env
+.git
+.github
+.idea
+bin
+output
+tmp
+*.md
+compose.yaml
+justfile
+.air.toml

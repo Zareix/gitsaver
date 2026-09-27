@@ -2,13 +2,17 @@ package webhook
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 )
+
+const webhookTimeout = 10 * time.Second
 
 type Payload struct {
 	Status    string    `json:"status"`
@@ -17,9 +21,9 @@ type Payload struct {
 	Service   string    `json:"service"`
 }
 
-func TriggerWebhook(webhookURL string, status string, message string, customHeaders map[string]string) error {
+func TriggerWebhook(ctx context.Context, webhookURL string, status string, message string, customHeaders map[string]string) error {
 	if webhookURL == "" {
-		log.Println("No webhook URL configured, skipping webhook notification")
+		slog.Debug("No webhook URL configured, skipping webhook notification")
 		return nil
 	}
 
@@ -35,7 +39,7 @@ func TriggerWebhook(webhookURL string, status string, message string, customHead
 		return fmt.Errorf("failed to marshal webhook payload: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", webhookURL, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, webhookURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return fmt.Errorf("failed to create webhook request: %w", err)
 	}
@@ -48,24 +52,20 @@ func TriggerWebhook(webhookURL string, status string, message string, customHead
 	}
 
 	client := &http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: webhookTimeout,
 	}
 
-	resp, err := client.Do(req)
+	res, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send webhook request: %w", err)
 	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			log.Printf("Failed to close response body: %v", err)
-		}
-	}(resp.Body)
+	defer func() { _ = res.Body.Close() }()
 
-	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		log.Printf("Webhook notification sent successfully to %s (status: %d)", webhookURL, resp.StatusCode)
+	if res.StatusCode >= 200 && res.StatusCode < 300 {
+		slog.Info("Webhook notification sent", "url", webhookURL, "status", res.StatusCode)
 		return nil
 	}
 
-	return fmt.Errorf("webhook request failed with status code: %d", resp.StatusCode)
+	body, _ := io.ReadAll(io.LimitReader(res.Body, 1024))
+	return fmt.Errorf("webhook request failed with status code %d: %s", res.StatusCode, strings.TrimSpace(string(body)))
 }

@@ -13,7 +13,6 @@ The application can be configured using environment variables.
 | Variable                           | Description                                                                          | Default                            |
 |------------------------------------|--------------------------------------------------------------------------------------|------------------------------------|
 | `DESTINATION_PATH`                 | The path where the backups will be stored.                                           | `./output` and `/output` in Docker |
-| `PORT`                             | The port on which the application will run.                                          | `8080`                             |
 | `WEBHOOK_SUCCESS_URL`              | The URL to trigger a POST request when backup completes successfully.                | /                                  |
 | `WEBHOOK_FAILURE_URL`              | The URL to trigger a POST request when backup fails.                                 | /                                  |
 | `WEBHOOK_HEADERS`                  | Additional headers to include in the webhook requests, formatted as `Key:Value`.     | /                                  |
@@ -38,7 +37,6 @@ services:
       - WEBHOOK_SUCCESS_URL=https://your-webhook-url.com/success
       - WEBHOOK_FAILURE_URL=https://your-webhook-url.com/failure
       - WEBHOOK_HEADERS="Authorization:Bearer token123"
-      - PORT=8080
       - GITHUB_BACKUP_METHOD=tarball
       - GITHUB_RUN_ON_STARTUP=true
       - GITHUB_CRON=0 0 * * *
@@ -50,6 +48,4 @@ services:
       - GITHUB_EXTRACT_TARBALLS=false
     volumes:
       - ./output:/output
-    ports:
-      - 8080:8080
 ```

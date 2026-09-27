@@ -1,4 +1,4 @@
-FROM golang:1.26.4-alpine3.23 AS builder
+FROM golang:1.27.1-alpine3.23 AS builder
 
 WORKDIR /app
 
@@ -8,19 +8,13 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o /app/gitsaver ./cmd/gitsaver
+RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /app/gitsaver ./cmd/gitsaver
 
 
-FROM gcr.io/distroless/static-debian12 AS runner
+FROM gcr.io/distroless/static-debian12:nonroot AS runner
 
 COPY --from=builder /app/gitsaver /app/gitsaver
 
 ENV DESTINATION_PATH=/output
-ENV PORT=8080
-
-EXPOSE 8080
-
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD ["/app/gitsaver", "health"]
 
 CMD ["/app/gitsaver"]
