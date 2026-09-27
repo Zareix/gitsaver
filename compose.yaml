@@ -8,6 +8,7 @@ services:
     restart: unless-stopped
     environment:
       TZ: Europe/Paris
+      LOG_FORMAT: ${LOG_FORMAT:-text}
       GITHUB_CRON: ${GITHUB_CRON}
       GITHUB_TOKEN: ${GITHUB_TOKEN}
       GITHUB_USERNAME: ${GITHUB_USERNAME}

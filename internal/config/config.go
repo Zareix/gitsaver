@@ -28,9 +28,17 @@ type GithubProviderConfig struct {
 	ExtractTarballs        bool
 }
 
+type LogFormat string
+
+const (
+	LogFormatText LogFormat = "text"
+	LogFormatJSON LogFormat = "json"
+)
+
 type Config struct {
 	Github            GithubProviderConfig
 	DestinationPath   string
+	LogFormat         LogFormat
 	SuccessWebhookURL string
 	FailureWebhookURL string
 	WebhookHeaders    map[string]string
@@ -50,6 +58,11 @@ func LoadConfig() (Config, error) {
 	failureWebhookURL := os.Getenv("WEBHOOK_FAILURE_URL")
 	webhookHeaders := parseWebhookHeaders(os.Getenv("WEBHOOK_HEADERS"))
 
+	logFormat, err := loadLogFormat()
+	if err != nil {
+		return Config{}, err
+	}
+
 	githubConfig, err := loadGithubConfig()
 	if err != nil {
 		return Config{}, err
@@ -58,10 +71,23 @@ func LoadConfig() (Config, error) {
 	return Config{
 		Github:            githubConfig,
 		DestinationPath:   destinationPath,
+		LogFormat:         logFormat,
 		SuccessWebhookURL: successWebhookURL,
 		WebhookHeaders:    webhookHeaders,
 		FailureWebhookURL: failureWebhookURL,
 	}, nil
+}
+
+func loadLogFormat() (LogFormat, error) {
+	logFormatEnv := os.Getenv("LOG_FORMAT")
+	switch strings.ToLower(logFormatEnv) {
+	case "", "text":
+		return LogFormatText, nil
+	case "json":
+		return LogFormatJSON, nil
+	default:
+		return "", fmt.Errorf("invalid LOG_FORMAT %q, expected %q or %q", logFormatEnv, LogFormatText, LogFormatJSON)
+	}
 }
 
 func loadGithubConfig() (GithubProviderConfig, error) {

@@ -55,9 +55,38 @@ func TestLoadConfigInvalidBackupMethod(t *testing.T) {
 	}
 }
 
+func TestLoadLogFormat(t *testing.T) {
+	tests := []struct {
+		name    string
+		env     string
+		want    LogFormat
+		wantErr bool
+	}{
+		{"empty", "", LogFormatText, false},
+		{"text", "text", LogFormatText, false},
+		{"text uppercase", "TEXT", LogFormatText, false},
+		{"json", "json", LogFormatJSON, false},
+		{"json uppercase", "JSON", LogFormatJSON, false},
+		{"invalid", "xml", "", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("LOG_FORMAT", tt.env)
+			got, err := loadLogFormat()
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("loadLogFormat(%q) error = %v, wantErr %v", tt.env, err, tt.wantErr)
+			}
+			if got != tt.want {
+				t.Fatalf("loadLogFormat(%q) = %q, want %q", tt.env, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestLoadConfigDefaults(t *testing.T) {
 	t.Setenv("GITHUB_TOKEN", "tok")
-	for _, key := range []string{"GITHUB_BACKUP_METHOD", "DESTINATION_PATH", "GITHUB_CRON", "GITHUB_RUN_ON_STARTUP", "WEBHOOK_SUCCESS_URL", "WEBHOOK_FAILURE_URL", "WEBHOOK_HEADERS"} {
+	for _, key := range []string{"GITHUB_BACKUP_METHOD", "DESTINATION_PATH", "GITHUB_CRON", "GITHUB_RUN_ON_STARTUP", "WEBHOOK_SUCCESS_URL", "WEBHOOK_FAILURE_URL", "WEBHOOK_HEADERS", "LOG_FORMAT"} {
 		t.Setenv(key, "")
 	}
 
@@ -70,6 +99,9 @@ func TestLoadConfigDefaults(t *testing.T) {
 	}
 	if cfg.Github.BackupMethod != Tarball {
 		t.Fatalf("BackupMethod = %q, want tarball", cfg.Github.BackupMethod)
+	}
+	if cfg.LogFormat != LogFormatText {
+		t.Fatalf("LogFormat = %q, want text", cfg.LogFormat)
 	}
 	if cfg.Github.Cron != "" {
 		t.Fatalf("Cron = %q, want empty", cfg.Github.Cron)

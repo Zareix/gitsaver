@@ -13,6 +13,7 @@ The application can be configured using environment variables.
 | Variable                           | Description                                                                          | Default                            |
 |------------------------------------|--------------------------------------------------------------------------------------|------------------------------------|
 | `DESTINATION_PATH`                 | The path where the backups will be stored.                                           | `./output` and `/output` in Docker |
+| `LOG_FORMAT`                       | The log output format. Can be `text` or `json`.                                      | `text`                             |
 | `WEBHOOK_SUCCESS_URL`              | The URL to trigger a POST request when backup completes successfully.                | /                                  |
 | `WEBHOOK_FAILURE_URL`              | The URL to trigger a POST request when backup fails.                                 | /                                  |
 | `WEBHOOK_HEADERS`                  | Additional headers to include in the webhook requests, formatted as `Key:Value`.     | /                                  |
@@ -34,6 +35,7 @@ services:
     image: ghcr.io/zareix/gitsaver:latest
     environment:
       - DESTINATION_PATH=/output
+      - LOG_FORMAT=json
       - WEBHOOK_SUCCESS_URL=https://your-webhook-url.com/success
       - WEBHOOK_FAILURE_URL=https://your-webhook-url.com/failure
       - WEBHOOK_HEADERS="Authorization:Bearer token123"

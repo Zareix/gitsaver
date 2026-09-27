@@ -17,7 +17,7 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
-const Version = "1.4.0"
+const Version = "1.4.1"
 
 const jobRunTimeout = 30 * time.Minute
 
@@ -32,6 +32,8 @@ func main() {
 		slog.Error("Failed to load config", "error", err)
 		os.Exit(1)
 	}
+
+	setupLogging(cfg.LogFormat)
 
 	if cfg.Github.Cron == "" {
 		slog.Info("No CRON configured, exiting")
@@ -70,6 +72,17 @@ func main() {
 	case <-shutdownCtx.Done():
 		slog.Warn("Shutdown timeout reached, stopping scheduler")
 	}
+}
+
+func setupLogging(format config.LogFormat) {
+	var handler slog.Handler
+	switch format {
+	case config.LogFormatJSON:
+		handler = slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{})
+	default:
+		handler = slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{})
+	}
+	slog.SetDefault(slog.New(handler))
 }
 
 func runBackupJob(ctx context.Context, cfg config.Config) {
