@@ -18,7 +18,7 @@ import (
 	"github.com/go-git/go-git/v6"
 	gitClient "github.com/go-git/go-git/v6/plumbing/client"
 	httpTransport "github.com/go-git/go-git/v6/plumbing/transport/http"
-	"github.com/google/go-github/v83/github"
+	"github.com/google/go-github/v92/github"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -32,9 +32,14 @@ type GithubClient struct {
 }
 
 func getClient(ctx context.Context, cfg config.Config) (*GithubClient, error) {
-	githubClient := github.NewClient(nil)
+	var githubClient *github.Client
+	var err error
 
 	if cfg.Github.Token == "" {
+		githubClient, err = github.NewClient()
+		if err != nil {
+			return nil, err
+		}
 		return &GithubClient{
 			ctx:             ctx,
 			isAuthenticated: false,
@@ -44,7 +49,10 @@ func getClient(ctx context.Context, cfg config.Config) (*GithubClient, error) {
 	}
 
 	slog.Info("Authenticating with GITHUB_TOKEN")
-	githubClient = githubClient.WithAuthToken(cfg.Github.Token)
+	githubClient, err = github.NewClient(github.WithAuthToken(cfg.Github.Token))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create GitHub client: %w", err)
+	}
 
 	user, _, err := githubClient.Users.Get(ctx, "")
 	if err != nil {
