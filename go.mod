@@ -5,6 +5,7 @@ go 1.27.1
 require (
 	github.com/go-git/go-git/v6 v6.0.0-alpha.5
 	github.com/google/go-github/v92 v92.0.0
+	github.com/google/go-github/v93 v93.0.0
 	github.com/joho/godotenv v1.5.1
 	github.com/robfig/cron/v3 v3.0.1
 	golang.org/x/sync v0.23.0
